@@ -1,66 +1,52 @@
+from utils.utils_matrix import Utils
 import threading
 import numpy as np
-from utils.utils_matrix import Utils
 
 class MatrixMultiply(Utils):
-
     def __init__(self) -> None:
         pass
 
-    def multiply_matrix_sequential(self, matrix_a, matrix_b, output, start_column=None, end_column=None):
-        n_rows:int = matrix_a.shape[0]
+    def multiply_matrix_sequential(self, matrix_a, matrix_b, output):
+        '''
+            Multiplica duas matrizes e retorna a matriz resultante.
+                1. matrix_a, matrix_b: Matrizes de entrada
+                2. output: Matriz resultante (matriz_a * matriz_b)
+        '''
+        return self.__multiply_matrix_block__(matrix_a, matrix_b, output, 0, matrix_a.shape[0], 0, matrix_a.shape[1])
 
-        start_column = 0 if start_column is None else start_column
-        end_column = matrix_a.shape[1] if end_column is None else end_column
-
-        for i in range (n_rows):
-            for j in range (start_column, end_column):
-                output[i][j] = 0
-                for k in range(n_rows):
-                    output[i][j] += matrix_a[i][k] * matrix_b[k][j]
-
-
-    # def multiply_matrix_parallel(self, n_threads:int, matrix_a, matrix_b, output):
-    #     n_cols:int = matrix_a.shape[1]
-    #     n_threads = min(n_threads, matrix_a.shape[1])
-    #     column_thread_ratio:int = n_cols // n_threads
-    #     threads = []
-        
-    #     for i in range(n_threads):
-    #         start_column:int = i * column_thread_ratio
-    #         end_column:int = (i+1) * column_thread_ratio if i != n_threads - 1 else n_cols
-            
-    #         thread = threading.Thread(target=self.multiply_matrix_sequential, args=(matrix_a, matrix_b, output, start_column, end_column))
-    #         threads.append(thread)
-    #         thread.start()
-    
-    #     self.__join__threads__(threads)
-    #     return output
-
-    def multiply_matrix_block(self, matrix_a, matrix_b, output, start_row, end_row, start_column, end_column):
-        for i in range(start_row, end_row):
-            for j in range(start_column, end_column):
-                output[i, j] = 0
-                for k in range(matrix_a.shape[1]):
-                    output[i, j] += matrix_a[i, k] * matrix_b[k, j]
-
-    
     def multiply_matrix_parallel(self, n_threads: int, matrix_a, matrix_b, output):
         n_rows, n_cols = matrix_a.shape[0], matrix_b.shape[1]
-        n_threads = min(n_threads, n_rows * n_cols)
         
-        block_size_row = max(1, n_rows // int(np.sqrt(n_threads)))
-        block_size_col = max(1, n_cols // int(np.sqrt(n_threads)))
+        n_threads = min(n_threads, n_rows * n_cols)
+        #Mínimo 1 thread para matriz toda, máximo 1 thread para cada elemento da matriz resultante
+        
+        b_size = max(1, n_cols // n_threads) 
+        #Tamanho do bloco da matriz a ser computado
         
         threads = []
-        for i in range(0, n_rows, block_size_row):
-            for j in range(0, n_cols, block_size_col):
-                end_row = min(i + block_size_row, n_rows)
-                end_column = min(j + block_size_col, n_cols)
+        for i in range(0, n_rows, b_size):
+            for j in range(0, n_cols, b_size):
+                end_row = min(i + b_size, n_rows)
+                end_column = min(j + b_size, n_cols)
                 
-                thread = threading.Thread(target=self.multiply_matrix_block, args=(matrix_a, matrix_b, output, i, end_row, j, end_column))
+                thread = threading.Thread(target=self.__multiply_matrix_block__, args=(matrix_a, matrix_b, output, i, end_row, j, end_column))
                 threads.append(thread)
                 thread.start()
     
         self.__join__threads__(threads)
         return output
+    
+    def __multiply_matrix_block__(self, matrix_a, matrix_b, output, start_row, end_row, start_column, end_column):
+        '''
+            Processa região da matriz resultante, delimitado por:
+                1. start_row, end_row: linhas iniciais e finais, respectivamente, da região a ser processada
+                2. start_column, end_column: colunas iniciais e finais, respectivamente, da região a ser processada
+
+            Segue o algoritmo tradicional de multiplicação de matrizes
+        '''
+        n_cols = matrix_a.shape[1]
+        for i in range(start_row, end_row):
+            for j in range(start_column, end_column):
+                output[i, j] = 0
+                for k in range(n_cols):
+                    output[i, j] += matrix_a[i, k] * matrix_b[k, j]
