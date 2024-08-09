@@ -2,7 +2,7 @@ from src.sum import MatrixSum
 from src.multiply import MatrixMultiply
 
 def main(sum:MatrixSum, multiply:MatrixMultiply, n_threads:int, matrix_a, matrix_b, output):
-    # sum.sum_matrix_parallel(n_threads, matrix_a, matrix_b, output)
+    sum.sum_matrix_parallel(n_threads, matrix_a, matrix_b, output)
     # sum.sum_matrix_sequential(matrix_a, matrix_b, output, True)
 
     multiply.multiply_matrix_parallel(n_threads, matrix_a, matrix_b, output)    
