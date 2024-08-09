@@ -39,4 +39,4 @@ class Utils:
         '''
         # low, high = -1024, 1024
         low, high = 0, 20
-        return np.random.randint(size=size**2, low=low, high=high, dtype=np.uint8).reshape((-1, size))
+        return np.random.randint(size=size**2, low=low, high=high).reshape((-1, size))
